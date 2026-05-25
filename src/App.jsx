@@ -31,9 +31,10 @@ export default function App() {
         </p>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-6 text-white/20 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-white/20 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none">
         <span>WASD — mover</span>
         <span>Q/E — rotar</span>
+        <span>D — bailar</span>
         <span>Arrastrar — orbitar</span>
       </div>
     </div>

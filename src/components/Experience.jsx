@@ -11,9 +11,15 @@ export default function Experience({ modelUrl }) {
   const groupRef = useRef()
   const shadowRef = useRef()
   const [hovered, setHovered] = useState(false)
+  const [dancing, setDancing] = useState(false)
 
   const handleKey = useCallback((down) => (e) => {
     const key = e.key.toLowerCase()
+    if (key === 'd' && down) {
+      setDancing((prev) => !prev)
+      e.preventDefault()
+      return
+    }
     if (key in keys) {
       keys[key] = down
       e.preventDefault()
@@ -35,8 +41,8 @@ export default function Experience({ modelUrl }) {
     if (!groupRef.current || !shadowRef.current) return
     const g = groupRef.current
 
-    const speed = 0.06 * delta * 60
-    const rotSpeed = 0.04 * delta * 60
+    const speed = dancing ? 0.02 : 0.06 * delta * 60
+    const rotSpeed = dancing ? 0.01 : 0.04 * delta * 60
     const dir = new THREE.Vector3()
 
     if (keys.w || keys.s) {
@@ -50,20 +56,27 @@ export default function Experience({ modelUrl }) {
 
     g.position.x += dir.x
     g.position.z += dir.z
-    g.position.y = hovered ? g.position.y : 0
+    g.position.y = hovered || dancing ? g.position.y : 0
 
     if (keys.q) g.rotation.y += rotSpeed
     if (keys.e) g.rotation.y -= rotSpeed
 
     shadowRef.current.position.x = g.position.x
     shadowRef.current.position.z = g.position.z
+
+    if (dancing) {
+      const s = 1 + Math.sin(Date.now() * 0.005) * 0.05
+      shadowRef.current.scale.setScalar(s)
+    } else {
+      shadowRef.current.scale.setScalar(1)
+    }
   })
 
   return (
     <>
       <fog attach="fog" args={['#0a0a0f', 8, 20]} />
 
-      <Lights />
+      <Lights dancing={dancing} />
 
       <Environment
         preset="night"
@@ -72,7 +85,7 @@ export default function Experience({ modelUrl }) {
       />
 
       <group ref={groupRef} position={[0, 0, 0]}>
-        <Model url={modelUrl} onHover={setHovered} />
+        <Model url={modelUrl} onHover={setHovered} dancing={dancing} />
       </group>
 
       <ContactShadows
