@@ -18,7 +18,7 @@ export default function App() {
       >
         <color attach="background" args={['#050508']} />
         <Experience
-          modelUrl="/models/Xbot.glb"
+          modelUrl="/models/MaterialsVariantsShoe.glb"
           onDanceChange={setDancing}
           modelColor={modelColor}
         />
