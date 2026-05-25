@@ -1,17 +1,62 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 import { Environment, ContactShadows } from '@react-three/drei'
 import Model from './Model.jsx'
 import Lights from './Lights.jsx'
 
+const keys = { w: false, a: false, s: false, d: false, q: false, e: false }
+
 export default function Experience({ modelUrl }) {
   const groupRef = useRef()
+  const shadowRef = useRef()
   const [hovered, setHovered] = useState(false)
 
-  useFrame(({ clock }) => {
-    if (!groupRef.current) return
-    const speed = hovered ? 0.05 : 0.25
-    groupRef.current.rotation.y += speed * 0.01
+  const handleKey = useCallback((down) => (e) => {
+    const key = e.key.toLowerCase()
+    if (key in keys) {
+      keys[key] = down
+      e.preventDefault()
+    }
+  }, [])
+
+  useEffect(() => {
+    const onDown = handleKey(true)
+    const onUp = handleKey(false)
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    return () => {
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+    }
+  }, [])
+
+  useFrame((_, delta) => {
+    if (!groupRef.current || !shadowRef.current) return
+    const g = groupRef.current
+
+    const speed = 0.06 * delta * 60
+    const rotSpeed = 0.04 * delta * 60
+    const dir = new THREE.Vector3()
+
+    if (keys.w || keys.s) {
+      dir.z = keys.w ? -speed : speed
+      dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y)
+    }
+    if (keys.a || keys.d) {
+      dir.x = keys.d ? speed : -speed
+      dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y)
+    }
+
+    g.position.x += dir.x
+    g.position.z += dir.z
+    g.position.y = hovered ? g.position.y : 0
+
+    if (keys.q) g.rotation.y += rotSpeed
+    if (keys.e) g.rotation.y -= rotSpeed
+
+    shadowRef.current.position.x = g.position.x
+    shadowRef.current.position.z = g.position.z
   })
 
   return (
@@ -27,13 +72,11 @@ export default function Experience({ modelUrl }) {
       />
 
       <group ref={groupRef} position={[0, 0, 0]}>
-        <Model
-          url={modelUrl}
-          onHover={setHovered}
-        />
+        <Model url={modelUrl} onHover={setHovered} />
       </group>
 
       <ContactShadows
+        ref={shadowRef}
         position={[0, -1.2, 0]}
         opacity={0.8}
         scale={6}
