@@ -1,14 +1,9 @@
-import { useRef } from 'react'
-
 export default function Lights() {
-  const lightRef = useRef()
-
   return (
     <>
       <directionalLight
-        ref={lightRef}
-        position={[5, 5, 5]}
-        intensity={1.5}
+        position={[5, 8, 5]}
+        intensity={3}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -21,24 +16,21 @@ export default function Lights() {
 
       <directionalLight
         position={[-5, 3, -3]}
-        intensity={0.5}
+        intensity={1.5}
         color="#6366f1"
       />
 
-      <ambientLight intensity={0.3} />
+      <ambientLight intensity={0.6} />
 
-      <spotLight
-        position={[0, 6, 0]}
-        intensity={0.4}
-        angle={0.6}
-        penumbra={0.8}
-        distance={20}
+      <pointLight
+        position={[0, 4, 2]}
+        intensity={2}
         color="#a78bfa"
+      />
+
+      <hemisphereLight
+        args={["#6366f1", "#0a0a0f", 0.5]}
       />
     </>
   )
-}
-
-export function LightsPreset() {
-  return <Lights />
 }
