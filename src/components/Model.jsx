@@ -12,49 +12,78 @@ const DANCE_COLORS = [
   new THREE.Color('#51cf66'),
 ]
 
-function GLBModel({ url, dancing, color }) {
+function GLBModel({ url, dancing, materialColors, onMaterialsFound }) {
   const groupRef = useRef()
   const bodyRef = useRef()
   const { scene, animations } = useGLTF(url, true)
   const { actions } = useAnimations(animations, groupRef)
   const actionsRef = useRef(actions)
   const offset = useRef(Math.random() * Math.PI * 2)
+  const materialsRef = useRef([])
+  const reported = useRef(false)
 
   actionsRef.current = actions
 
   useEffect(() => {
-    if (!scene) return
+    if (!scene || reported.current) return
+    const parts = []
+
     scene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true
         child.receiveShadow = true
         if (child.material) {
           child.material.envMapIntensity = 1.8
-          if (child.material.roughness !== undefined) {
-            child.material.roughness = Math.min(child.material.roughness, 0.6)
-          }
-          if (child.material.metalness !== undefined) {
-            child.material.metalness = Math.max(child.material.metalness, 0.3)
+          const matName =
+            child.material.name ||
+            child.name
+              .replace(/_/g, ' ')
+              .replace(/([A-Z])/g, ' $1')
+              .trim() ||
+            `Part ${parts.length + 1}`
+          const label = matName.charAt(0).toUpperCase() + matName.slice(1)
+
+          if (!parts.find((p) => p.name === label)) {
+            parts.push({
+              name: label,
+              meshName: child.name,
+              material: child.material,
+              color: '#' + child.material.color.getHexString(),
+            })
           }
         }
       }
     })
-  }, [scene])
+
+    materialsRef.current = parts
+    reported.current = true
+    onMaterialsFound?.(parts)
+  }, [scene, onMaterialsFound])
 
   useEffect(() => {
-    if (!scene || !color) return
-    const c = new THREE.Color(color)
+    if (!scene || !materialColors || Object.keys(materialColors).length === 0) return
     scene.traverse((child) => {
       if (child.isMesh && child.material) {
-        gsap.to(child.material.color, {
-          r: c.r, g: c.g, b: c.b,
-          duration: 0.8,
-          ease: 'power2.out',
-          overwrite: 'auto',
-        })
+        const matName =
+          child.material.name ||
+          child.name
+            .replace(/_/g, ' ')
+            .replace(/([A-Z])/g, ' $1')
+            .trim()
+        const label = matName.charAt(0).toUpperCase() + matName.slice(1)
+        const hex = materialColors[label]
+        if (hex) {
+          const c = new THREE.Color(hex)
+          gsap.to(child.material.color, {
+            r: c.r, g: c.g, b: c.b,
+            duration: 0.5,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          })
+        }
       }
     })
-  }, [color, scene])
+  }, [materialColors, scene])
 
   useEffect(() => {
     const a = actionsRef.current
@@ -110,7 +139,7 @@ function GLBModel({ url, dancing, color }) {
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
-        <primitive object={scene} scale={1.6} />
+        <primitive object={scene} scale={2.2} />
       </group>
     </group>
   )
@@ -195,14 +224,19 @@ function LoadingFallback() {
   )
 }
 
-export default function Model({ url, dancing, color }) {
+export default function Model({ url, dancing, materialColors, onMaterialsFound }) {
   if (!url) {
-    return <PlaceholderModel dancing={dancing} color={color} />
+    return <PlaceholderModel dancing={dancing} color={materialColors?.['Part'] || '#6366f1'} />
   }
 
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <GLBModel url={url} dancing={dancing} color={color} />
+      <GLBModel
+        url={url}
+        dancing={dancing}
+        materialColors={materialColors}
+        onMaterialsFound={onMaterialsFound}
+      />
     </Suspense>
   )
 }

@@ -4,7 +4,13 @@ import { Environment, ContactShadows } from '@react-three/drei'
 import Model from './Model.jsx'
 import Lights from './Lights.jsx'
 
-export default function Experience({ modelUrl, onDanceChange, modelColor, dancing }) {
+export default function Experience({
+  modelUrl,
+  onDanceChange,
+  dancing,
+  materialColors,
+  onMaterialsFound,
+}) {
   const groupRef = useRef()
   const shadowRef = useRef()
 
@@ -52,20 +58,25 @@ export default function Experience({ modelUrl, onDanceChange, modelColor, dancin
       <Environment
         preset="city"
         resolution={1024}
-        background
+        background={false}
       />
 
-      <group ref={groupRef} position={[0, 0, 0]}>
-        <Model url={modelUrl} dancing={dancing} color={modelColor} />
+      <group ref={groupRef} position={[0, -0.3, 0]}>
+        <Model
+          url={modelUrl}
+          dancing={dancing}
+          materialColors={materialColors}
+          onMaterialsFound={onMaterialsFound}
+        />
       </group>
 
       <ContactShadows
         ref={shadowRef}
-        position={[0, -0.8, 0]}
-        opacity={0.4}
-        scale={5}
-        blur={3.5}
-        far={1.5}
+        position={[0, -1, 0]}
+        opacity={0.35}
+        scale={6}
+        blur={4}
+        far={2}
         resolution={1024}
         color="#000000"
       />
