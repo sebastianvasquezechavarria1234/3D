@@ -4,6 +4,16 @@ import * as THREE from 'three'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { gsap } from 'gsap'
 
+function formatName(str) {
+  return str
+    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/  +/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    || 'Part'
+}
+
 const DANCE_COLORS = [
   new THREE.Color('#ff6b6b'),
   new THREE.Color('#ffd93d'),
@@ -27,6 +37,7 @@ function GLBModel({ url, dancing, materialColors, onMaterialsFound }) {
   useEffect(() => {
     if (!scene || reported.current) return
     const parts = []
+    const seen = new Set()
 
     scene.traverse((child) => {
       if (child.isMesh) {
@@ -34,25 +45,35 @@ function GLBModel({ url, dancing, materialColors, onMaterialsFound }) {
         child.receiveShadow = true
         if (child.material) {
           child.material.envMapIntensity = 1.8
-          const matName =
-            child.material.name ||
-            child.name
-              .replace(/_/g, ' ')
-              .replace(/([A-Z])/g, ' $1')
-              .trim() ||
-            `Part ${parts.length + 1}`
-          const label = matName.charAt(0).toUpperCase() + matName.slice(1)
-
-          if (!parts.find((p) => p.name === label)) {
-            parts.push({
-              name: label,
-              meshName: child.name,
-              material: child.material,
-              color: '#' + child.material.color.getHexString(),
-            })
-          }
         }
       }
+    })
+
+    scene.traverse((child) => {
+      if (!child.isMesh || !child.material) return
+      if (Array.isArray(child.material)) {
+        child.material.forEach((mat) => {
+          if (!seen.has(mat.uuid)) {
+            seen.add(mat.uuid)
+            parts.push({
+              name: formatName(child.name),
+              meshName: child.name,
+              material: mat,
+              color: '#' + mat.color.getHexString(),
+            })
+          }
+        })
+        return
+      }
+      if (seen.has(child.material.uuid)) return
+      seen.add(child.material.uuid)
+
+      parts.push({
+        name: formatName(child.name),
+        meshName: child.name,
+        material: child.material,
+        color: '#' + child.material.color.getHexString(),
+      })
     })
 
     materialsRef.current = parts
@@ -62,26 +83,24 @@ function GLBModel({ url, dancing, materialColors, onMaterialsFound }) {
 
   useEffect(() => {
     if (!scene || !materialColors || Object.keys(materialColors).length === 0) return
+    const colors = Object.entries(materialColors)
     scene.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const matName =
-          child.material.name ||
-          child.name
-            .replace(/_/g, ' ')
-            .replace(/([A-Z])/g, ' $1')
-            .trim()
-        const label = matName.charAt(0).toUpperCase() + matName.slice(1)
-        const hex = materialColors[label]
+      if (!child.isMesh || !child.material) return
+
+      const mats = Array.isArray(child.material) ? child.material : [child.material]
+      mats.forEach((mat) => {
+        const key = formatName(child.name)
+        const hex = materialColors[key] || colors.find(([k]) => k === key)?.[1]
         if (hex) {
           const c = new THREE.Color(hex)
-          gsap.to(child.material.color, {
+          gsap.to(mat.color, {
             r: c.r, g: c.g, b: c.b,
             duration: 0.5,
             ease: 'power2.out',
             overwrite: 'auto',
           })
         }
-      }
+      })
     })
   }, [materialColors, scene])
 
