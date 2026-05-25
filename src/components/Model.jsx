@@ -110,7 +110,7 @@ function GLBModel({ url, dancing, color }) {
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
-        <primitive object={scene} scale={0.9} />
+        <primitive object={scene} scale={1.6} />
       </group>
     </group>
   )

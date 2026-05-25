@@ -52,7 +52,7 @@ export default function Experience({ modelUrl, onDanceChange, modelColor, dancin
       <Environment
         preset="city"
         resolution={1024}
-        background={false}
+        background
       />
 
       <group ref={groupRef} position={[0, 0, 0]}>

@@ -9,21 +9,18 @@ export default function App() {
   const [modelColor, setModelColor] = useState('#6366f1')
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-gradient-to-br from-[#0a0a12] via-[#0f0f1a] to-[#1a1a2e]">
+    <div className="relative w-screen h-screen overflow-hidden bg-black">
       <Canvas
-        camera={{ position: [0, 1.2, 3.8], fov: 30 }}
+        camera={{ position: [0, 1.5, 4.5], fov: 30 }}
         gl={{
           antialias: true,
-          alpha: true,
+          alpha: false,
           toneMapping: 3,
           toneMappingExposure: 1.0,
           outputColorSpace: 'srgb',
         }}
         dpr={[1, 2]}
         shadows
-        onCreated={(state) => {
-          state.gl.setClearColor(0x000000, 0)
-        }}
       >
         <Experience
           modelUrl="/models/MaterialsVariantsShoe.glb"
@@ -34,8 +31,8 @@ export default function App() {
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
-          minDistance={1.5}
-          maxDistance={8}
+          minDistance={2.5}
+          maxDistance={10}
           minPolarAngle={0.2}
           maxPolarAngle={Math.PI / 2.2}
           autoRotate={!dancing}
