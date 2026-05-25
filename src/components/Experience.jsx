@@ -9,16 +9,18 @@ export default function Experience({ modelUrl }) {
 
   useFrame(({ clock }) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = clock.getElapsedTime() * 0.5
+      groupRef.current.rotation.y = clock.getElapsedTime() * 0.3
     }
   })
 
   return (
     <>
+      <fog attach="fog" args={['#0a0a0f', 8, 20]} />
+
       <Lights />
 
       <Environment
-        preset="city"
+        preset="night"
         resolution={256}
         background={false}
       />
@@ -28,11 +30,12 @@ export default function Experience({ modelUrl }) {
       </group>
 
       <ContactShadows
-        position={[0, -1.5, 0]}
-        opacity={0.6}
-        scale={8}
-        blur={2.5}
+        position={[0, -1.2, 0]}
+        opacity={0.8}
+        scale={6}
+        blur={3}
         far={2}
+        color="#000000"
       />
     </>
   )
