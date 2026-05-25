@@ -7,7 +7,7 @@ import Lights from './Lights.jsx'
 
 const keys = { w: false, a: false, s: false, d: false, q: false, e: false }
 
-export default function Experience({ modelUrl, onDanceChange }) {
+export default function Experience({ modelUrl, onDanceChange, modelColor }) {
   const groupRef = useRef()
   const shadowRef = useRef()
   const [hovered, setHovered] = useState(false)
@@ -93,7 +93,7 @@ export default function Experience({ modelUrl, onDanceChange }) {
       />
 
       <group ref={groupRef} position={[0, 0, 0]}>
-        <Model url={modelUrl} onHover={setHovered} dancing={dancing} />
+        <Model url={modelUrl} onHover={setHovered} dancing={dancing} color={modelColor} />
       </group>
 
       <ContactShadows

@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import Experience from './components/Experience.jsx'
+import ColorPalette from './components/ColorPalette.jsx'
 
 export default function App() {
   const [dancing, setDancing] = useState(false)
+  const [modelColor, setModelColor] = useState('#6366f1')
 
   return (
     <div className="relative w-screen h-screen bg-[#050508] overflow-hidden">
@@ -15,7 +17,11 @@ export default function App() {
         shadows
       >
         <color attach="background" args={['#050508']} />
-        <Experience modelUrl="/models/Xbot.glb" onDanceChange={setDancing} />
+        <Experience
+          modelUrl="/models/Xbot.glb"
+          onDanceChange={setDancing}
+          modelColor={modelColor}
+        />
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
@@ -42,7 +48,9 @@ export default function App() {
         </div>
       )}
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-white/20 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none z-10">
+      <ColorPalette selected={modelColor} onSelect={setModelColor} />
+
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-white/20 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none z-10">
         <span>WASD — mover</span>
         <span>Q/E — rotar</span>
         <span>D — bailar</span>

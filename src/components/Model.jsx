@@ -12,7 +12,7 @@ const DANCE_COLORS = [
   new THREE.Color('#51cf66'),
 ]
 
-function GLBModel({ url, onHover, dancing, ...props }) {
+function GLBModel({ url, onHover, dancing, color, ...props }) {
   const groupRef = useRef()
   const innerRef = useRef()
   const [hovered, setHovered] = useState(false)
@@ -28,6 +28,21 @@ function GLBModel({ url, onHover, dancing, ...props }) {
   useEffect(() => {
     onHover?.(hovered)
   }, [hovered, onHover])
+
+  useEffect(() => {
+    if (!scene || !color) return
+    const c = new THREE.Color(color)
+    scene.traverse((child) => {
+      if (child.isMesh && child.material) {
+        gsap.to(child.material.color, {
+          r: c.r, g: c.g, b: c.b,
+          duration: 0.6,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        })
+      }
+    })
+  }, [color, scene])
 
   useEffect(() => {
     const a = actionsRef.current
@@ -135,7 +150,7 @@ function GLBModel({ url, onHover, dancing, ...props }) {
   )
 }
 
-function PlaceholderModel({ onHover, dancing }) {
+function PlaceholderModel({ onHover, dancing, color }) {
   const groupRef = useRef()
   const [hovered, setHovered] = useState(false)
   const matRef = useRef()
@@ -167,6 +182,17 @@ function PlaceholderModel({ onHover, dancing }) {
       ease: 'power2.out',
     })
   }, [hovered, dancing])
+
+  useEffect(() => {
+    if (!matRef.current || !color) return
+    gsap.to(matRef.current.color, {
+      r: new THREE.Color(color).r,
+      g: new THREE.Color(color).g,
+      b: new THREE.Color(color).b,
+      duration: 0.6,
+      ease: 'power2.out',
+    })
+  }, [color])
 
   useFrame((state) => {
     if (!groupRef.current) return
@@ -248,14 +274,14 @@ function LoadingFallback({ onHover }) {
   )
 }
 
-export default function Model({ url, onHover, dancing, ...props }) {
+export default function Model({ url, onHover, dancing, color, ...props }) {
   if (!url) {
-    return <PlaceholderModel onHover={onHover} dancing={dancing} />
+    return <PlaceholderModel onHover={onHover} dancing={dancing} color={color} />
   }
 
   return (
     <Suspense fallback={<LoadingFallback onHover={onHover} />}>
-      <GLBModel url={url} onHover={onHover} dancing={dancing} {...props} />
+      <GLBModel url={url} onHover={onHover} dancing={dancing} color={color} {...props} />
     </Suspense>
   )
 }
