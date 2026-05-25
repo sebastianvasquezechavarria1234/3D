@@ -34,11 +34,6 @@ export default function Experience({ modelUrl }) {
         blur={2.5}
         far={2}
       />
-
-      <mesh position={[0, -1.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[10, 10]} />
-        <meshStandardMaterial color="#1a1a25" />
-      </mesh>
     </>
   )
 }

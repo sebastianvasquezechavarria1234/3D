@@ -12,7 +12,7 @@ export default function App() {
         shadows
       >
         <color attach="background" args={['#0a0a0f']} />
-        <Experience />
+        <Experience modelUrl="/models/Xbot.glb" />
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
