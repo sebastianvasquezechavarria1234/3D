@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Environment, ContactShadows } from '@react-three/drei'
 import Model from './Model.jsx'
@@ -6,11 +6,12 @@ import Lights from './Lights.jsx'
 
 export default function Experience({ modelUrl }) {
   const groupRef = useRef()
+  const [hovered, setHovered] = useState(false)
 
   useFrame(({ clock }) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = clock.getElapsedTime() * 0.3
-    }
+    if (!groupRef.current) return
+    const speed = hovered ? 0.05 : 0.25
+    groupRef.current.rotation.y += speed * 0.01
   })
 
   return (
@@ -26,7 +27,10 @@ export default function Experience({ modelUrl }) {
       />
 
       <group ref={groupRef} position={[0, 0, 0]}>
-        <Model url={modelUrl} />
+        <Model
+          url={modelUrl}
+          onHover={setHovered}
+        />
       </group>
 
       <ContactShadows
