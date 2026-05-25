@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import Experience from './components/Experience.jsx'
@@ -9,6 +9,7 @@ export default function App() {
   const [materials, setMaterials] = useState(null)
   const [materialColors, setMaterialColors] = useState({})
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const glRef = useRef()
 
   const handleMaterialsFound = useCallback((parts) => {
     setMaterials(parts)
@@ -43,6 +44,7 @@ export default function App() {
         dpr={[1, 2]}
         shadows
         onCreated={(state) => {
+          glRef.current = state.gl
           state.gl.setClearColor(0x000000, 0)
         }}
       >
@@ -82,6 +84,7 @@ export default function App() {
       )}
 
       <Sidebar
+        glRef={glRef}
         materials={materials}
         materialColors={materialColors}
         onColorChange={handleColorChange}

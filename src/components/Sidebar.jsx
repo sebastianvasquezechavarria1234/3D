@@ -1,10 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
-import { useThree } from '@react-three/fiber'
+import { useRef, useEffect } from 'react'
 import { gsap } from 'gsap'
 
-export default function Sidebar({ materials, materialColors, onColorChange, open, onToggle }) {
+export default function Sidebar({ glRef, materials, materialColors, onColorChange, open, onToggle }) {
   const barRef = useRef()
-  const { gl } = useThree()
 
   useEffect(() => {
     gsap.to(barRef.current, {
@@ -15,7 +13,8 @@ export default function Sidebar({ materials, materialColors, onColorChange, open
   }, [open])
 
   const handleScreenshot = () => {
-    gl.domElement.toBlob((blob) => {
+    if (!glRef?.current) return
+    glRef.current.domElement.toBlob((blob) => {
       const link = document.createElement('a')
       link.download = `shoe-${Date.now()}.png`
       link.href = URL.createObjectURL(blob)
