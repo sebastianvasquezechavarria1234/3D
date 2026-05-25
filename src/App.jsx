@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import Experience from './components/Experience.jsx'
 
 export default function App() {
+  const [dancing, setDancing] = useState(false)
+
   return (
     <div className="relative w-screen h-screen bg-[#050508] overflow-hidden">
       <Canvas
@@ -12,7 +15,7 @@ export default function App() {
         shadows
       >
         <color attach="background" args={['#050508']} />
-        <Experience modelUrl="/models/Xbot.glb" />
+        <Experience modelUrl="/models/Xbot.glb" onDanceChange={setDancing} />
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
@@ -22,7 +25,7 @@ export default function App() {
         />
       </Canvas>
 
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none z-10">
         <h1 className="text-white/60 text-sm md:text-base font-mono tracking-[0.3em] uppercase">
           3D Experience
         </h1>
@@ -31,7 +34,15 @@ export default function App() {
         </p>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-white/20 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none">
+      {dancing && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none z-10">
+          <span className="text-pink-400 text-xs font-mono tracking-[0.2em] animate-pulse">
+            ♫ DANCE MODE ♫
+          </span>
+        </div>
+      )}
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-white/20 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none z-10">
         <span>WASD — mover</span>
         <span>Q/E — rotar</span>
         <span>D — bailar</span>

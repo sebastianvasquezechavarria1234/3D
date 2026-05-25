@@ -4,7 +4,13 @@ import * as THREE from 'three'
 import { useGLTF, useAnimations, useCursor } from '@react-three/drei'
 import { gsap } from 'gsap'
 
-const DANCE_COLORS = ['#ff6b6b', '#ffd93d', '#6bcbff', '#ff6bff', '#51cf66']
+const DANCE_COLORS = [
+  new THREE.Color('#ff6b6b'),
+  new THREE.Color('#ffd93d'),
+  new THREE.Color('#6bcbff'),
+  new THREE.Color('#ff6bff'),
+  new THREE.Color('#51cf66'),
+]
 
 function GLBModel({ url, onHover, dancing, ...props }) {
   const groupRef = useRef()
@@ -12,8 +18,10 @@ function GLBModel({ url, onHover, dancing, ...props }) {
   const [hovered, setHovered] = useState(false)
   const { scene, animations } = useGLTF(url)
   const { actions, mixer } = useAnimations(animations, groupRef)
-  const floatOffset = useRef(Math.random() * Math.PI * 2)
-  const dancePhase = useRef(0)
+  const actionsRef = useRef(actions)
+  const offset = useRef(Math.random() * Math.PI * 2)
+
+  actionsRef.current = actions
 
   useCursor(hovered)
 
@@ -22,24 +30,22 @@ function GLBModel({ url, onHover, dancing, ...props }) {
   }, [hovered, onHover])
 
   useEffect(() => {
-    if (!actions) return
-    const names = Object.keys(actions)
+    const a = actionsRef.current
+    if (!a) return
+    const names = Object.keys(a)
+    if (names.length === 0) return
+
+    Object.values(a).forEach((act) => act.stop())
 
     if (dancing) {
-      const danceAnim = names.find((n) => n.toLowerCase().includes('dance'))
-      const target = danceAnim ? actions[danceAnim] : names.length > 0 ? actions[names[0]] : null
-      if (target) {
-        Object.values(actions).forEach((a) => a.stop())
-        target.reset().play()
-        target.setEffectiveTimeScale(1.2)
-      }
+      const dance = names.find((n) => n.toLowerCase().includes('dance'))
+      const target = dance ? a[dance] : a[names[0]]
+      target.reset().play()
+      target.setEffectiveTimeScale(1.3)
     } else {
-      if (names.length > 0) {
-        Object.values(actions).forEach((a) => a.stop())
-        actions[names[0]].reset().play()
-      }
+      a[names[0]].reset().play()
     }
-  }, [dancing, actions])
+  }, [dancing])
 
   useEffect(() => {
     if (!groupRef.current) return
@@ -59,7 +65,6 @@ function GLBModel({ url, onHover, dancing, ...props }) {
         const mat = child.material
         gsap.to(mat, {
           emissiveIntensity: hovered || dancing ? 0.6 : 0,
-          envMapIntensity: hovered || dancing ? 2 : 1,
           duration: 0.4,
           ease: 'power2.out',
           overwrite: 'auto',
@@ -68,39 +73,46 @@ function GLBModel({ url, onHover, dancing, ...props }) {
     })
   }, [hovered, dancing, scene])
 
+  const colorTargets = useRef(DANCE_COLORS.map((c) => c.clone()))
+
   useFrame((state) => {
     if (!groupRef.current) return
     const t = state.clock.elapsedTime
 
     if (dancing) {
-      const beat = Math.sin(t * 4) * 0.5 + 0.5
-      groupRef.current.position.y = Math.sin(t * 4 + floatOffset.current) * 0.15
-      groupRef.current.rotation.z = Math.sin(t * 2.5) * 0.04
-      groupRef.current.rotation.x = Math.sin(t * 3) * 0.02
+      const bounce = Math.sin(t * 5 + offset.current) * 0.35
+      const sway = Math.sin(t * 3.2) * 0.08
+      const groove = Math.sin(t * 2.7 + 1) * 0.04
+
+      groupRef.current.position.y = bounce
+      groupRef.current.rotation.z = sway
+      groupRef.current.rotation.x = groove
 
       if (innerRef.current) {
-        innerRef.current.rotation.z = Math.sin(t * 8) * 0.05
-        innerRef.current.rotation.x = Math.sin(t * 6 + 1) * 0.03
+        innerRef.current.rotation.z = Math.sin(t * 7 + offset.current) * 0.06
+        innerRef.current.rotation.x = Math.sin(t * 5.5) * 0.04
       }
 
       scene.traverse((child) => {
         if (child.isMesh && child.material) {
-          const colorIdx = Math.floor((t * 2) % DANCE_COLORS.length)
-          const nextIdx = (colorIdx + 1) % DANCE_COLORS.length
-          const mix = (Math.sin(t * 4) * 0.5 + 0.5)
-          child.material.emissive?.lerpColors
-            ? child.material.emissive.lerpColors(
-                new THREE.Color(DANCE_COLORS[colorIdx]),
-                new THREE.Color(DANCE_COLORS[nextIdx]),
-                mix,
-              )
-            : child.material.emissive?.set(DANCE_COLORS[colorIdx])
-          child.material.emissiveIntensity = 0.3 + beat * 0.5
+          const idx = Math.floor((t * 2) % DANCE_COLORS.length)
+          const next = (idx + 1) % DANCE_COLORS.length
+          const mix = Math.sin(t * 4) * 0.5 + 0.5
+
+          colorTargets.current[idx].copy(DANCE_COLORS[idx])
+          colorTargets.current[next].copy(DANCE_COLORS[next])
+
+          child.material.emissive.lerpColors(
+            DANCE_COLORS[idx],
+            DANCE_COLORS[next],
+            mix,
+          )
+          child.material.emissiveIntensity = 0.4 + bounce * 1.5 + 0.3
         }
       })
     } else if (hovered) {
-      groupRef.current.position.y = Math.sin(t * 2 + floatOffset.current) * 0.08
-      groupRef.current.rotation.z = Math.sin(t * 1.5 + floatOffset.current) * 0.015
+      groupRef.current.position.y = Math.sin(t * 2 + offset.current) * 0.08
+      groupRef.current.rotation.z = Math.sin(t * 1.5 + offset.current) * 0.015
       groupRef.current.rotation.x = 0
     } else {
       groupRef.current.position.y = 0
@@ -127,7 +139,7 @@ function PlaceholderModel({ onHover, dancing }) {
   const groupRef = useRef()
   const [hovered, setHovered] = useState(false)
   const matRef = useRef()
-  const floatOffset = useRef(Math.random() * Math.PI * 2)
+  const offset = useRef(Math.random() * Math.PI * 2)
 
   useCursor(hovered)
 
@@ -138,9 +150,9 @@ function PlaceholderModel({ onHover, dancing }) {
   useEffect(() => {
     if (!groupRef.current) return
     gsap.to(groupRef.current.scale, {
-      x: hovered || dancing ? 1.2 : 1,
-      y: hovered || dancing ? 1.2 : 1,
-      z: hovered || dancing ? 1.2 : 1,
+      x: hovered || dancing ? 1.3 : 1,
+      y: hovered || dancing ? 1.3 : 1,
+      z: hovered || dancing ? 1.3 : 1,
       duration: 0.5,
       ease: 'back.out(2)',
     })
@@ -149,7 +161,7 @@ function PlaceholderModel({ onHover, dancing }) {
   useEffect(() => {
     if (!matRef.current) return
     gsap.to(matRef.current, {
-      emissiveIntensity: hovered || dancing ? 0.8 : 0,
+      emissiveIntensity: hovered || dancing ? 1 : 0,
       envMapIntensity: hovered || dancing ? 2 : 1,
       duration: 0.4,
       ease: 'power2.out',
@@ -161,18 +173,17 @@ function PlaceholderModel({ onHover, dancing }) {
     const t = state.clock.elapsedTime
 
     if (dancing) {
-      groupRef.current.position.y = Math.sin(t * 4 + floatOffset.current) * 0.2
-      groupRef.current.rotation.z = Math.sin(t * 3) * 0.05
-      groupRef.current.rotation.y += 0.02
+      groupRef.current.position.y = Math.sin(t * 5 + offset.current) * 0.4
+      groupRef.current.rotation.z = Math.sin(t * 3.5) * 0.08
+      groupRef.current.rotation.y += 0.03
 
       if (matRef.current) {
-        const colors = DANCE_COLORS
-        const idx = Math.floor((t * 2) % colors.length)
-        matRef.current.color.set(colors[idx])
-        matRef.current.emissive.set(colors[(idx + 2) % colors.length])
+        const idx = Math.floor((t * 2) % DANCE_COLORS.length)
+        matRef.current.color.copy(DANCE_COLORS[idx])
+        matRef.current.emissive.copy(DANCE_COLORS[(idx + 3) % DANCE_COLORS.length])
       }
     } else if (hovered) {
-      groupRef.current.position.y = Math.sin(t * 2 + floatOffset.current) * 0.1
+      groupRef.current.position.y = Math.sin(t * 2 + offset.current) * 0.1
       groupRef.current.rotation.z = Math.sin(t * 1.5) * 0.02
       groupRef.current.rotation.y += 0.005
     } else {

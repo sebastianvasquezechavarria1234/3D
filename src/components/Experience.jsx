@@ -7,16 +7,24 @@ import Lights from './Lights.jsx'
 
 const keys = { w: false, a: false, s: false, d: false, q: false, e: false }
 
-export default function Experience({ modelUrl }) {
+export default function Experience({ modelUrl, onDanceChange }) {
   const groupRef = useRef()
   const shadowRef = useRef()
   const [hovered, setHovered] = useState(false)
   const [dancing, setDancing] = useState(false)
 
+  const toggleDance = useCallback(() => {
+    setDancing((prev) => {
+      const next = !prev
+      onDanceChange?.(next)
+      return next
+    })
+  }, [onDanceChange])
+
   const handleKey = useCallback((down) => (e) => {
     const key = e.key.toLowerCase()
     if (key === 'd' && down) {
-      setDancing((prev) => !prev)
+      toggleDance()
       e.preventDefault()
       return
     }
@@ -24,7 +32,7 @@ export default function Experience({ modelUrl }) {
       keys[key] = down
       e.preventDefault()
     }
-  }, [])
+  }, [toggleDance])
 
   useEffect(() => {
     const onDown = handleKey(true)
@@ -35,7 +43,7 @@ export default function Experience({ modelUrl }) {
       window.removeEventListener('keydown', onDown)
       window.removeEventListener('keyup', onUp)
     }
-  }, [])
+  }, [handleKey])
 
   useFrame((_, delta) => {
     if (!groupRef.current || !shadowRef.current) return
@@ -65,7 +73,7 @@ export default function Experience({ modelUrl }) {
     shadowRef.current.position.z = g.position.z
 
     if (dancing) {
-      const s = 1 + Math.sin(Date.now() * 0.005) * 0.05
+      const s = 1 + Math.sin(Date.now() * 0.005) * 0.08
       shadowRef.current.scale.setScalar(s)
     } else {
       shadowRef.current.scale.setScalar(1)
