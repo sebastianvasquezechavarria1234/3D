@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, Suspense } from 'react'
+import { useRef, useEffect, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGLTF, useAnimations } from '@react-three/drei'
@@ -12,15 +12,34 @@ const DANCE_COLORS = [
   new THREE.Color('#51cf66'),
 ]
 
-function GLBModel({ url, dancing, color, ...props }) {
+function GLBModel({ url, dancing, color }) {
   const groupRef = useRef()
-  const innerRef = useRef()
-  const { scene, animations } = useGLTF(url)
+  const bodyRef = useRef()
+  const { scene, animations } = useGLTF(url, true)
   const { actions } = useAnimations(animations, groupRef)
   const actionsRef = useRef(actions)
   const offset = useRef(Math.random() * Math.PI * 2)
 
   actionsRef.current = actions
+
+  useEffect(() => {
+    if (!scene) return
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+        if (child.material) {
+          child.material.envMapIntensity = 1.8
+          if (child.material.roughness !== undefined) {
+            child.material.roughness = Math.min(child.material.roughness, 0.6)
+          }
+          if (child.material.metalness !== undefined) {
+            child.material.metalness = Math.max(child.material.metalness, 0.3)
+          }
+        }
+      }
+    })
+  }, [scene])
 
   useEffect(() => {
     if (!scene || !color) return
@@ -29,7 +48,7 @@ function GLBModel({ url, dancing, color, ...props }) {
       if (child.isMesh && child.material) {
         gsap.to(child.material.color, {
           r: c.r, g: c.g, b: c.b,
-          duration: 0.6,
+          duration: 0.8,
           ease: 'power2.out',
           overwrite: 'auto',
         })
@@ -43,15 +62,18 @@ function GLBModel({ url, dancing, color, ...props }) {
     const names = Object.keys(a)
     if (names.length === 0) return
 
-    Object.values(a).forEach((act) => act.stop())
+    Object.values(a).forEach((act) => { if (act) act.stop() })
 
     if (dancing) {
       const dance = names.find((n) => n.toLowerCase().includes('dance'))
       const target = dance ? a[dance] : a[names[0]]
-      target.reset().play()
-      target.setEffectiveTimeScale(1.3)
+      if (target) {
+        target.reset().play()
+        target.setEffectiveTimeScale(1.3)
+      }
     } else {
-      a[names[0]].reset().play()
+      const idle = a[names[0]]
+      if (idle) idle.reset().play()
     }
   }, [dancing])
 
@@ -60,17 +82,13 @@ function GLBModel({ url, dancing, color, ...props }) {
     const t = state.clock.elapsedTime
 
     if (dancing) {
-      const bounce = Math.sin(t * 5 + offset.current) * 0.35
-      const sway = Math.sin(t * 3.2) * 0.08
-      const groove = Math.sin(t * 2.7 + 1) * 0.04
+      groupRef.current.position.y = Math.sin(t * 5 + offset.current) * 0.4
+      groupRef.current.rotation.z = Math.sin(t * 3.2) * 0.08
+      groupRef.current.rotation.x = Math.sin(t * 2.7 + 1) * 0.04
 
-      groupRef.current.position.y = bounce
-      groupRef.current.rotation.z = sway
-      groupRef.current.rotation.x = groove
-
-      if (innerRef.current) {
-        innerRef.current.rotation.z = Math.sin(t * 7 + offset.current) * 0.06
-        innerRef.current.rotation.x = Math.sin(t * 5.5) * 0.04
+      if (bodyRef.current) {
+        bodyRef.current.rotation.z = Math.sin(t * 7 + offset.current) * 0.06
+        bodyRef.current.rotation.x = Math.sin(t * 5.5) * 0.04
       }
 
       scene.traverse((child) => {
@@ -83,20 +101,16 @@ function GLBModel({ url, dancing, color, ...props }) {
             DANCE_COLORS[next],
             mix,
           )
-          child.material.emissiveIntensity = 0.4 + bounce * 1.5 + 0.3
+          child.material.emissiveIntensity = 0.5 + Math.sin(t * 5) * 0.4
         }
       })
-    } else {
-      groupRef.current.position.y = 0
-      groupRef.current.rotation.z = 0
-      groupRef.current.rotation.x = 0
     }
   })
 
   return (
-    <group ref={groupRef} {...props}>
-      <group ref={innerRef}>
-        <primitive object={scene} scale={1} castShadow receiveShadow />
+    <group ref={groupRef}>
+      <group ref={bodyRef}>
+        <primitive object={scene} scale={0.9} />
       </group>
     </group>
   )
@@ -108,21 +122,11 @@ function PlaceholderModel({ dancing, color }) {
   const offset = useRef(Math.random() * Math.PI * 2)
 
   useEffect(() => {
-    if (!groupRef.current) return
-    gsap.to(groupRef.current.scale, {
-      x: dancing ? 1.3 : 1,
-      y: dancing ? 1.3 : 1,
-      z: dancing ? 1.3 : 1,
-      duration: 0.5,
-      ease: 'back.out(2)',
-    })
-  }, [dancing])
-
-  useEffect(() => {
     if (!matRef.current) return
     gsap.to(matRef.current, {
       emissiveIntensity: dancing ? 1 : 0,
-      duration: 0.4,
+      envMapIntensity: dancing ? 2 : 1.5,
+      duration: 0.5,
       ease: 'power2.out',
     })
   }, [dancing])
@@ -151,23 +155,22 @@ function PlaceholderModel({ dancing, color }) {
         matRef.current.color.copy(DANCE_COLORS[idx])
         matRef.current.emissive.copy(DANCE_COLORS[(idx + 3) % DANCE_COLORS.length])
       }
-    } else {
-      groupRef.current.position.y = 0
-      groupRef.current.rotation.z = 0
     }
   })
 
   return (
     <group ref={groupRef}>
-      <mesh position={[0, 0, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
         <torusGeometry args={[0.8, 0.25, 32, 64]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           ref={matRef}
           color="#6366f1"
           metalness={0.8}
           roughness={0.15}
           emissive="#818cf8"
           emissiveIntensity={0}
+          envMapIntensity={1.5}
+          clearcoat={0.1}
         />
       </mesh>
       <mesh position={[0, 0, 0]} castShadow receiveShadow>
@@ -186,20 +189,20 @@ function PlaceholderModel({ dancing, color }) {
 function LoadingFallback() {
   return (
     <mesh position={[0, 0.5, 0]}>
-      <boxGeometry args={[0.5, 0.5, 0.5]} />
+      <boxGeometry args={[0.3, 0.3, 0.3]} />
       <meshStandardMaterial color="#6366f1" wireframe />
     </mesh>
   )
 }
 
-export default function Model({ url, dancing, color, ...props }) {
+export default function Model({ url, dancing, color }) {
   if (!url) {
     return <PlaceholderModel dancing={dancing} color={color} />
   }
 
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <GLBModel url={url} dancing={dancing} color={color} {...props} />
+      <GLBModel url={url} dancing={dancing} color={color} />
     </Suspense>
   )
 }

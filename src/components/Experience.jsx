@@ -1,37 +1,23 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
 import { Environment, ContactShadows } from '@react-three/drei'
 import Model from './Model.jsx'
 import Lights from './Lights.jsx'
 
-const keys = { w: false, a: false, s: false, d: false, q: false, e: false }
-
-export default function Experience({ modelUrl, onDanceChange, modelColor }) {
+export default function Experience({ modelUrl, onDanceChange, modelColor, dancing }) {
   const groupRef = useRef()
   const shadowRef = useRef()
-  const [dancing, setDancing] = useState(false)
 
-  const toggleDance = useCallback(() => {
-    setDancing((prev) => {
-      const next = !prev
-      onDanceChange?.(next)
-      return next
-    })
-  }, [onDanceChange])
+  useEffect(() => {
+    onDanceChange?.(false)
+  }, [])
 
   const handleKey = useCallback((down) => (e) => {
-    const key = e.key.toLowerCase()
-    if (key === 'd' && down) {
-      toggleDance()
-      e.preventDefault()
-      return
-    }
-    if (key in keys) {
-      keys[key] = down
+    if (e.key.toLowerCase() === 'd' && down) {
+      onDanceChange?.((prev) => !prev)
       e.preventDefault()
     }
-  }, [toggleDance])
+  }, [onDanceChange])
 
   useEffect(() => {
     const onDown = handleKey(true)
@@ -44,48 +30,28 @@ export default function Experience({ modelUrl, onDanceChange, modelColor }) {
     }
   }, [handleKey])
 
-  useFrame((_, delta) => {
+  useFrame((state) => {
     if (!groupRef.current || !shadowRef.current) return
     const g = groupRef.current
+    const t = state.clock.elapsedTime
 
-    const speed = dancing ? 0.02 : 0.06 * delta * 60
-    const rotSpeed = dancing ? 0.01 : 0.04 * delta * 60
-    const dir = new THREE.Vector3()
-
-    if (keys.w || keys.s) {
-      dir.z = keys.w ? -speed : speed
-      dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y)
+    if (!dancing) {
+      g.position.y = Math.sin(t * 0.8) * 0.04
     }
-    if (keys.a || keys.d) {
-      dir.x = keys.d ? speed : -speed
-      dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y)
-    }
-
-    g.position.x += dir.x
-    g.position.z += dir.z
-    g.position.y = dancing ? g.position.y : 0
-
-    if (keys.q) g.rotation.y += rotSpeed
-    if (keys.e) g.rotation.y -= rotSpeed
 
     shadowRef.current.position.x = g.position.x
     shadowRef.current.position.z = g.position.z
-
-    if (dancing) {
-      const s = 1 + Math.sin(Date.now() * 0.005) * 0.08
-      shadowRef.current.scale.setScalar(s)
-    } else {
-      shadowRef.current.scale.setScalar(1)
-    }
   })
 
   return (
     <>
+      <fog attach="fog" args={['#0a0a12', 6, 15]} />
+
       <Lights dancing={dancing} />
 
       <Environment
-        preset="studio"
-        resolution={256}
+        preset="city"
+        resolution={1024}
         background={false}
       />
 
@@ -95,11 +61,12 @@ export default function Experience({ modelUrl, onDanceChange, modelColor }) {
 
       <ContactShadows
         ref={shadowRef}
-        position={[0, -1.2, 0]}
-        opacity={0.6}
-        scale={6}
-        blur={3}
-        far={2}
+        position={[0, -0.8, 0]}
+        opacity={0.4}
+        scale={5}
+        blur={3.5}
+        far={1.5}
+        resolution={1024}
         color="#000000"
       />
     </>

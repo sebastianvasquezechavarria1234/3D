@@ -9,39 +9,51 @@ export default function App() {
   const [modelColor, setModelColor] = useState('#6366f1')
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden">
+    <div className="relative w-screen h-screen overflow-hidden bg-gradient-to-br from-[#0a0a12] via-[#0f0f1a] to-[#1a1a2e]">
       <Canvas
-        camera={{ position: [0, 1.8, 5.5], fov: 35 }}
-        gl={{ antialias: true, alpha: true, toneMapping: 3, toneMappingExposure: 1.2 }}
+        camera={{ position: [0, 1.2, 3.8], fov: 30 }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          toneMapping: 3,
+          toneMappingExposure: 1.0,
+          outputColorSpace: 'srgb',
+        }}
         dpr={[1, 2]}
         shadows
+        onCreated={(state) => {
+          state.gl.setClearColor(0x000000, 0)
+        }}
       >
         <Experience
           modelUrl="/models/MaterialsVariantsShoe.glb"
           onDanceChange={setDancing}
           modelColor={modelColor}
+          dancing={dancing}
         />
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
-          minDistance={2.5}
-          maxDistance={12}
+          minDistance={1.5}
+          maxDistance={8}
+          minPolarAngle={0.2}
+          maxPolarAngle={Math.PI / 2.2}
+          autoRotate={!dancing}
+          autoRotateSpeed={1.5}
           makeDefault
         />
       </Canvas>
 
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none z-10">
-        <h1 className="text-white/60 text-sm md:text-base font-mono tracking-[0.3em] uppercase drop-shadow-lg">
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center pointer-events-none z-10">
+        <h1 className="text-white/50 text-xs md:text-sm font-mono tracking-[0.4em] uppercase drop-shadow-xl">
           3D Experience
         </h1>
-        <p className="text-white/20 text-xs mt-2 font-mono tracking-widest drop-shadow-lg">
-          React Three Fiber · GSAP · Tailwind
-        </p>
+        <div className="mt-2 w-12 h-px mx-auto bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </div>
 
       {dancing && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-          <span className="text-pink-400 text-xs font-mono tracking-[0.2em] animate-pulse drop-shadow-lg">
+          <span className="text-pink-400/80 text-[10px] font-mono tracking-[0.3em] animate-pulse drop-shadow-xl">
             ♫ DANCE MODE ♫
           </span>
         </div>
@@ -49,11 +61,10 @@ export default function App() {
 
       <ColorPalette selected={modelColor} onSelect={setModelColor} />
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-white/30 text-[10px] font-mono tracking-widest uppercase select-none pointer-events-none z-10 drop-shadow-lg">
-        <span>WASD — mover</span>
-        <span>Q/E — rotar</span>
-        <span>D — bailar</span>
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-x-5 gap-y-1 text-white/15 text-[9px] font-mono tracking-[0.2em] uppercase select-none pointer-events-none z-10 drop-shadow-xl">
         <span>Arrastrar — orbitar</span>
+        <span>Rueda — zoom</span>
+        <span>D — dance</span>
       </div>
     </div>
   )
