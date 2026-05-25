@@ -37,42 +37,39 @@ function GLBModel({ url, dancing, materialColors, onMaterialsFound }) {
   useEffect(() => {
     if (!scene || reported.current) return
     const parts = []
-    const seen = new Set()
+    const clonedNames = new Set()
 
     scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true
-        child.receiveShadow = true
-        if (child.material) {
-          child.material.envMapIntensity = 1.8
+      if (!child.isMesh) return
+      child.castShadow = true
+      child.receiveShadow = true
+
+      let mats = child.material
+      if (!mats) return
+      if (!Array.isArray(mats)) mats = [mats]
+
+      const cloned = mats.map((mat) => {
+        const clone = mat.clone()
+        clone.envMapIntensity = 1.8
+        return clone
+      })
+
+      child.material = cloned.length === 1 ? cloned[0] : cloned
+
+      cloned.forEach((mat, i) => {
+        const label = formatName(Array.isArray(child.material) ? child.name : child.name)
+        const suffix = cloned.length > 1 ? ` ${i + 1}` : ''
+        const uniqueName = label + suffix
+
+        if (!clonedNames.has(uniqueName)) {
+          clonedNames.add(uniqueName)
+          parts.push({
+            name: uniqueName,
+            meshName: child.name,
+            material: mat,
+            color: '#' + mat.color.getHexString(),
+          })
         }
-      }
-    })
-
-    scene.traverse((child) => {
-      if (!child.isMesh || !child.material) return
-      if (Array.isArray(child.material)) {
-        child.material.forEach((mat) => {
-          if (!seen.has(mat.uuid)) {
-            seen.add(mat.uuid)
-            parts.push({
-              name: formatName(child.name),
-              meshName: child.name,
-              material: mat,
-              color: '#' + mat.color.getHexString(),
-            })
-          }
-        })
-        return
-      }
-      if (seen.has(child.material.uuid)) return
-      seen.add(child.material.uuid)
-
-      parts.push({
-        name: formatName(child.name),
-        meshName: child.name,
-        material: child.material,
-        color: '#' + child.material.color.getHexString(),
       })
     })
 
@@ -83,23 +80,26 @@ function GLBModel({ url, dancing, materialColors, onMaterialsFound }) {
 
   useEffect(() => {
     if (!scene || !materialColors || Object.keys(materialColors).length === 0) return
-    const colors = Object.entries(materialColors)
+    const entries = Object.entries(materialColors)
+
     scene.traverse((child) => {
       if (!child.isMesh || !child.material) return
 
+      const label = formatName(child.name)
+      const hex = materialColors[label] || entries.find(([k]) => k === label)?.[1]
+      if (!hex) return
+
       const mats = Array.isArray(child.material) ? child.material : [child.material]
-      mats.forEach((mat) => {
-        const key = formatName(child.name)
-        const hex = materialColors[key] || colors.find(([k]) => k === key)?.[1]
-        if (hex) {
-          const c = new THREE.Color(hex)
-          gsap.to(mat.color, {
-            r: c.r, g: c.g, b: c.b,
-            duration: 0.5,
-            ease: 'power2.out',
-            overwrite: 'auto',
-          })
-        }
+      mats.forEach((mat, i) => {
+        const key = label + (mats.length > 1 ? ` ${i + 1}` : '')
+        const h = materialColors[key] || hex
+        const c = new THREE.Color(h)
+        gsap.to(mat.color, {
+          r: c.r, g: c.g, b: c.b,
+          duration: 0.5,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        })
       })
     })
   }, [materialColors, scene])
