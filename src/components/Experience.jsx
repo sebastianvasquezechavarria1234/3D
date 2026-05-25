@@ -10,7 +10,6 @@ const keys = { w: false, a: false, s: false, d: false, q: false, e: false }
 export default function Experience({ modelUrl, onDanceChange, modelColor }) {
   const groupRef = useRef()
   const shadowRef = useRef()
-  const [hovered, setHovered] = useState(false)
   const [dancing, setDancing] = useState(false)
 
   const toggleDance = useCallback(() => {
@@ -64,7 +63,7 @@ export default function Experience({ modelUrl, onDanceChange, modelColor }) {
 
     g.position.x += dir.x
     g.position.z += dir.z
-    g.position.y = hovered || dancing ? g.position.y : 0
+    g.position.y = dancing ? g.position.y : 0
 
     if (keys.q) g.rotation.y += rotSpeed
     if (keys.e) g.rotation.y -= rotSpeed
@@ -82,24 +81,22 @@ export default function Experience({ modelUrl, onDanceChange, modelColor }) {
 
   return (
     <>
-      <fog attach="fog" args={['#0a0a0f', 8, 20]} />
-
       <Lights dancing={dancing} />
 
       <Environment
-        preset="night"
+        preset="studio"
         resolution={256}
         background={false}
       />
 
       <group ref={groupRef} position={[0, 0, 0]}>
-        <Model url={modelUrl} onHover={setHovered} dancing={dancing} color={modelColor} />
+        <Model url={modelUrl} dancing={dancing} color={modelColor} />
       </group>
 
       <ContactShadows
         ref={shadowRef}
         position={[0, -1.2, 0]}
-        opacity={0.8}
+        opacity={0.6}
         scale={6}
         blur={3}
         far={2}

@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useGLTF, useAnimations, useCursor } from '@react-three/drei'
+import { useGLTF, useAnimations } from '@react-three/drei'
 import { gsap } from 'gsap'
 
 const DANCE_COLORS = [
@@ -12,22 +12,15 @@ const DANCE_COLORS = [
   new THREE.Color('#51cf66'),
 ]
 
-function GLBModel({ url, onHover, dancing, color, ...props }) {
+function GLBModel({ url, dancing, color, ...props }) {
   const groupRef = useRef()
   const innerRef = useRef()
-  const [hovered, setHovered] = useState(false)
   const { scene, animations } = useGLTF(url)
-  const { actions, mixer } = useAnimations(animations, groupRef)
+  const { actions } = useAnimations(animations, groupRef)
   const actionsRef = useRef(actions)
   const offset = useRef(Math.random() * Math.PI * 2)
 
   actionsRef.current = actions
-
-  useCursor(hovered)
-
-  useEffect(() => {
-    onHover?.(hovered)
-  }, [hovered, onHover])
 
   useEffect(() => {
     if (!scene || !color) return
@@ -62,34 +55,6 @@ function GLBModel({ url, onHover, dancing, color, ...props }) {
     }
   }, [dancing])
 
-  useEffect(() => {
-    if (!groupRef.current) return
-    gsap.to(groupRef.current.scale, {
-      x: hovered ? 1.15 : 1,
-      y: hovered ? 1.15 : 1,
-      z: hovered ? 1.15 : 1,
-      duration: 0.5,
-      ease: 'back.out(2)',
-    })
-  }, [hovered])
-
-  useEffect(() => {
-    if (!scene) return
-    scene.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const mat = child.material
-        gsap.to(mat, {
-          emissiveIntensity: hovered || dancing ? 0.6 : 0,
-          duration: 0.4,
-          ease: 'power2.out',
-          overwrite: 'auto',
-        })
-      }
-    })
-  }, [hovered, dancing, scene])
-
-  const colorTargets = useRef(DANCE_COLORS.map((c) => c.clone()))
-
   useFrame((state) => {
     if (!groupRef.current) return
     const t = state.clock.elapsedTime
@@ -113,10 +78,6 @@ function GLBModel({ url, onHover, dancing, color, ...props }) {
           const idx = Math.floor((t * 2) % DANCE_COLORS.length)
           const next = (idx + 1) % DANCE_COLORS.length
           const mix = Math.sin(t * 4) * 0.5 + 0.5
-
-          colorTargets.current[idx].copy(DANCE_COLORS[idx])
-          colorTargets.current[next].copy(DANCE_COLORS[next])
-
           child.material.emissive.lerpColors(
             DANCE_COLORS[idx],
             DANCE_COLORS[next],
@@ -125,10 +86,6 @@ function GLBModel({ url, onHover, dancing, color, ...props }) {
           child.material.emissiveIntensity = 0.4 + bounce * 1.5 + 0.3
         }
       })
-    } else if (hovered) {
-      groupRef.current.position.y = Math.sin(t * 2 + offset.current) * 0.08
-      groupRef.current.rotation.z = Math.sin(t * 1.5 + offset.current) * 0.015
-      groupRef.current.rotation.x = 0
     } else {
       groupRef.current.position.y = 0
       groupRef.current.rotation.z = 0
@@ -137,12 +94,7 @@ function GLBModel({ url, onHover, dancing, color, ...props }) {
   })
 
   return (
-    <group
-      ref={groupRef}
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
-      onPointerOut={() => setHovered(false)}
-      {...props}
-    >
+    <group ref={groupRef} {...props}>
       <group ref={innerRef}>
         <primitive object={scene} scale={1} castShadow receiveShadow />
       </group>
@@ -150,45 +102,36 @@ function GLBModel({ url, onHover, dancing, color, ...props }) {
   )
 }
 
-function PlaceholderModel({ onHover, dancing, color }) {
+function PlaceholderModel({ dancing, color }) {
   const groupRef = useRef()
-  const [hovered, setHovered] = useState(false)
   const matRef = useRef()
   const offset = useRef(Math.random() * Math.PI * 2)
-
-  useCursor(hovered)
-
-  useEffect(() => {
-    onHover?.(hovered)
-  }, [hovered, onHover])
 
   useEffect(() => {
     if (!groupRef.current) return
     gsap.to(groupRef.current.scale, {
-      x: hovered || dancing ? 1.3 : 1,
-      y: hovered || dancing ? 1.3 : 1,
-      z: hovered || dancing ? 1.3 : 1,
+      x: dancing ? 1.3 : 1,
+      y: dancing ? 1.3 : 1,
+      z: dancing ? 1.3 : 1,
       duration: 0.5,
       ease: 'back.out(2)',
     })
-  }, [hovered, dancing])
+  }, [dancing])
 
   useEffect(() => {
     if (!matRef.current) return
     gsap.to(matRef.current, {
-      emissiveIntensity: hovered || dancing ? 1 : 0,
-      envMapIntensity: hovered || dancing ? 2 : 1,
+      emissiveIntensity: dancing ? 1 : 0,
       duration: 0.4,
       ease: 'power2.out',
     })
-  }, [hovered, dancing])
+  }, [dancing])
 
   useEffect(() => {
     if (!matRef.current || !color) return
+    const c = new THREE.Color(color)
     gsap.to(matRef.current.color, {
-      r: new THREE.Color(color).r,
-      g: new THREE.Color(color).g,
-      b: new THREE.Color(color).b,
+      r: c.r, g: c.g, b: c.b,
       duration: 0.6,
       ease: 'power2.out',
     })
@@ -208,10 +151,6 @@ function PlaceholderModel({ onHover, dancing, color }) {
         matRef.current.color.copy(DANCE_COLORS[idx])
         matRef.current.emissive.copy(DANCE_COLORS[(idx + 3) % DANCE_COLORS.length])
       }
-    } else if (hovered) {
-      groupRef.current.position.y = Math.sin(t * 2 + offset.current) * 0.1
-      groupRef.current.rotation.z = Math.sin(t * 1.5) * 0.02
-      groupRef.current.rotation.y += 0.005
     } else {
       groupRef.current.position.y = 0
       groupRef.current.rotation.z = 0
@@ -219,11 +158,7 @@ function PlaceholderModel({ onHover, dancing, color }) {
   })
 
   return (
-    <group
-      ref={groupRef}
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
-      onPointerOut={() => setHovered(false)}
-    >
+    <group ref={groupRef}>
       <mesh position={[0, 0, 0]} castShadow receiveShadow>
         <torusGeometry args={[0.8, 0.25, 32, 64]} />
         <meshStandardMaterial
@@ -233,7 +168,6 @@ function PlaceholderModel({ onHover, dancing, color }) {
           roughness={0.15}
           emissive="#818cf8"
           emissiveIntensity={0}
-          envMapIntensity={1}
         />
       </mesh>
       <mesh position={[0, 0, 0]} castShadow receiveShadow>
@@ -249,39 +183,23 @@ function PlaceholderModel({ onHover, dancing, color }) {
   )
 }
 
-function LoadingFallback({ onHover }) {
-  const [hovered, setHovered] = useState(false)
-  useCursor(hovered)
-
-  useEffect(() => {
-    onHover?.(hovered)
-  }, [hovered, onHover])
-
+function LoadingFallback() {
   return (
-    <mesh
-      position={[0, 0.5, 0]}
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
-      onPointerOut={() => setHovered(false)}
-    >
+    <mesh position={[0, 0.5, 0]}>
       <boxGeometry args={[0.5, 0.5, 0.5]} />
-      <meshStandardMaterial
-        color="#6366f1"
-        wireframe
-        emissive={hovered ? '#818cf8' : '#000000'}
-        emissiveIntensity={hovered ? 0.5 : 0}
-      />
+      <meshStandardMaterial color="#6366f1" wireframe />
     </mesh>
   )
 }
 
-export default function Model({ url, onHover, dancing, color, ...props }) {
+export default function Model({ url, dancing, color, ...props }) {
   if (!url) {
-    return <PlaceholderModel onHover={onHover} dancing={dancing} color={color} />
+    return <PlaceholderModel dancing={dancing} color={color} />
   }
 
   return (
-    <Suspense fallback={<LoadingFallback onHover={onHover} />}>
-      <GLBModel url={url} onHover={onHover} dancing={dancing} color={color} {...props} />
+    <Suspense fallback={<LoadingFallback />}>
+      <GLBModel url={url} dancing={dancing} color={color} {...props} />
     </Suspense>
   )
 }
